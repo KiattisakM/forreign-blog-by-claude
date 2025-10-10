@@ -329,22 +329,5 @@ Microsoft ยังคงเติบโตแข็งแกร่งจาก 
   },
 ]
 
-// Helper function to get articles by market
-export function getArticlesByMarket(market: string) {
-  return mockArticles.filter(article => article.ticker.market === market)
-}
-
-// Helper function to get articles by category
-export function getArticlesByCategory(category: string) {
-  return mockArticles.filter(article => article.category === category)
-}
-
-// Helper function to get article by slug
-export function getArticleBySlug(slug: string) {
-  return mockArticles.find(article => article.slug === slug)
-}
-
-// Helper function to get article by ID
-export function getArticleById(id: string) {
-  return mockArticles.find(article => article.id === id)
-}
+// Export the articles array for use in index.ts
+// Helper functions moved to mockArticles2.ts to avoid duplication
