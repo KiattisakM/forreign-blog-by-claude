@@ -61,6 +61,38 @@ export default {
         sans: ['Inter', 'system-ui', 'sans-serif'],
         mono: ['Roboto Mono', 'monospace'],
       },
+      animation: {
+        'shimmer-slide':
+          'shimmer-slide var(--shimmer-duration) ease-in-out infinite alternate',
+        'spin-around': 'spin-around calc(var(--shimmer-duration) * 2) infinite linear',
+        'border-beam': 'border-beam calc(var(--duration)*1s) infinite linear',
+      },
+      keyframes: {
+        'shimmer-slide': {
+          to: {
+            transform: 'translate(calc(100cqw - 100%), 0)',
+          },
+        },
+        'spin-around': {
+          '0%': {
+            transform: 'translateZ(0) rotate(0)',
+          },
+          '15%, 35%': {
+            transform: 'translateZ(0) rotate(90deg)',
+          },
+          '65%, 85%': {
+            transform: 'translateZ(0) rotate(270deg)',
+          },
+          '100%': {
+            transform: 'translateZ(0) rotate(360deg)',
+          },
+        },
+        'border-beam': {
+          '100%': {
+            'offset-distance': '100%',
+          },
+        },
+      },
     },
   },
   plugins: [],

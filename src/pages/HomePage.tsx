@@ -5,6 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { MainLayout } from '@/components/layout/MainLayout'
 import { StockArticleCard } from '@/components/StockArticleCard'
+import { GridPattern } from '@/components/magicui/grid-pattern'
+import { NumberTicker } from '@/components/magicui/number-ticker'
+import { ShimmerButton } from '@/components/magicui/shimmer-button'
+import { BorderBeam } from '@/components/magicui/border-beam'
 import { mockStockArticles } from '@/data/mockStockArticles'
 import { StockMarket } from '@/types'
 
@@ -22,8 +26,9 @@ export default function HomePage() {
   return (
     <MainLayout>
       {/* Hero Section */}
-      <section className="py-12 md:py-20 bg-gradient-to-b from-primary/5 to-background">
-        <div className="container mx-auto px-4 text-center">
+      <section className="relative py-12 md:py-20 bg-gradient-to-b from-primary/5 to-background overflow-hidden">
+        <GridPattern className="absolute inset-0 opacity-50" />
+        <div className="container mx-auto px-4 text-center relative z-10">
           <div className="flex justify-center mb-6">
             <Globe2 className="h-16 w-16 text-primary" />
           </div>
@@ -34,12 +39,15 @@ export default function HomePage() {
             Your gateway to international markets. Expert analysis, insights, and education on US, European, and Asian stocks.
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
-            <Button asChild size="lg">
-              <Link to="/articles">
+            <Link to="/articles">
+              <ShimmerButton
+                className="shadow-2xl"
+                background="linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary)) 100%)"
+              >
                 <BookOpen className="mr-2 h-5 w-5" />
-                Browse All Articles
-              </Link>
-            </Button>
+                <span>Browse All Articles</span>
+              </ShimmerButton>
+            </Link>
             <Button asChild size="lg" variant="outline">
               <Link to="/about">Learn More</Link>
             </Button>
@@ -54,7 +62,8 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* US Markets */}
             <Link to="/markets/US">
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
+              <Card className="relative hover:shadow-lg transition-shadow cursor-pointer h-full overflow-hidden">
+                <BorderBeam size={250} duration={12} delay={0} />
                 <CardHeader>
                   <div className="flex items-center justify-between mb-2">
                     <CardTitle className="text-2xl">🇺🇸 US Markets</CardTitle>
@@ -67,7 +76,9 @@ export default function HomePage() {
                 <CardContent>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Articles</span>
-                    <span className="text-2xl font-bold text-primary">{marketCounts.US}</span>
+                    <span className="text-2xl font-bold text-primary">
+                      <NumberTicker value={marketCounts.US} />
+                    </span>
                   </div>
                 </CardContent>
               </Card>
@@ -75,7 +86,8 @@ export default function HomePage() {
 
             {/* EU Markets */}
             <Link to="/markets/EU">
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
+              <Card className="relative hover:shadow-lg transition-shadow cursor-pointer h-full overflow-hidden">
+                <BorderBeam size={250} duration={12} delay={4} colorFrom="#a855f7" colorTo="#3b82f6" />
                 <CardHeader>
                   <div className="flex items-center justify-between mb-2">
                     <CardTitle className="text-2xl">🇪🇺 European Markets</CardTitle>
@@ -88,7 +100,9 @@ export default function HomePage() {
                 <CardContent>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Articles</span>
-                    <span className="text-2xl font-bold text-purple-600">{marketCounts.EU}</span>
+                    <span className="text-2xl font-bold text-purple-600">
+                      <NumberTicker value={marketCounts.EU} delay={0.2} />
+                    </span>
                   </div>
                 </CardContent>
               </Card>
@@ -96,7 +110,8 @@ export default function HomePage() {
 
             {/* Asian Markets */}
             <Link to="/markets/ASIA">
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
+              <Card className="relative hover:shadow-lg transition-shadow cursor-pointer h-full overflow-hidden">
+                <BorderBeam size={250} duration={12} delay={8} colorFrom="#f97316" colorTo="#eab308" />
                 <CardHeader>
                   <div className="flex items-center justify-between mb-2">
                     <CardTitle className="text-2xl">🌏 Asian Markets</CardTitle>
@@ -109,7 +124,9 @@ export default function HomePage() {
                 <CardContent>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Articles</span>
-                    <span className="text-2xl font-bold text-orange-600">{marketCounts.ASIA}</span>
+                    <span className="text-2xl font-bold text-orange-600">
+                      <NumberTicker value={marketCounts.ASIA} delay={0.4} />
+                    </span>
                   </div>
                 </CardContent>
               </Card>
