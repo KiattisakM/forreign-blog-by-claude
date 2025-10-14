@@ -1,17 +1,21 @@
-import './index.css'
+import { Routes, Route } from 'react-router-dom'
+import HomePage from './pages/HomePage'
+import ArticleListPage from './pages/ArticleListPage'
+import ArticleDetailPage from './pages/ArticleDetailPage'
+import MarketPage from './pages/MarketPage'
+import SectorPage from './pages/SectorPage'
+import AboutPage from './pages/AboutPage'
 
 function App() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold text-center">
-          Foreign Stock Blog
-        </h1>
-        <p className="text-center text-muted-foreground mt-4">
-          Setup complete. Ready for development.
-        </p>
-      </div>
-    </div>
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/articles" element={<ArticleListPage />} />
+      <Route path="/articles/:slug" element={<ArticleDetailPage />} />
+      <Route path="/markets/:market" element={<MarketPage />} />
+      <Route path="/sectors/:sector" element={<SectorPage />} />
+      <Route path="/about" element={<AboutPage />} />
+    </Routes>
   )
 }
 
