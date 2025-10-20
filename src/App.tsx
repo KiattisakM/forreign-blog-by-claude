@@ -1,4 +1,5 @@
 import { Routes, Route } from 'react-router-dom'
+import { ThemeProvider } from './contexts/ThemeContext'
 import HomePage from './pages/HomePage'
 import ArticleListPage from './pages/ArticleListPage'
 import ArticleDetailPage from './pages/ArticleDetailPage'
@@ -8,14 +9,16 @@ import AboutPage from './pages/AboutPage'
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/articles" element={<ArticleListPage />} />
-      <Route path="/articles/:slug" element={<ArticleDetailPage />} />
-      <Route path="/markets/:market" element={<MarketPage />} />
-      <Route path="/sectors/:sector" element={<SectorPage />} />
-      <Route path="/about" element={<AboutPage />} />
-    </Routes>
+    <ThemeProvider>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/articles" element={<ArticleListPage />} />
+        <Route path="/articles/:slug" element={<ArticleDetailPage />} />
+        <Route path="/markets/:market" element={<MarketPage />} />
+        <Route path="/sectors/:sector" element={<SectorPage />} />
+        <Route path="/about" element={<AboutPage />} />
+      </Routes>
+    </ThemeProvider>
   )
 }
 

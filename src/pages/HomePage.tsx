@@ -62,7 +62,7 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* US Markets */}
             <Link to="/markets/US">
-              <Card className="relative hover:shadow-lg transition-shadow cursor-pointer h-full overflow-hidden">
+              <Card className="relative hover:shadow-lg dark:hover:shadow-primary/20 transition-shadow cursor-pointer h-full overflow-hidden">
                 <BorderBeam size={250} duration={12} delay={0} />
                 <CardHeader>
                   <div className="flex items-center justify-between mb-2">
@@ -86,7 +86,7 @@ export default function HomePage() {
 
             {/* EU Markets */}
             <Link to="/markets/EU">
-              <Card className="relative hover:shadow-lg transition-shadow cursor-pointer h-full overflow-hidden">
+              <Card className="relative hover:shadow-lg dark:hover:shadow-purple-500/20 transition-shadow cursor-pointer h-full overflow-hidden">
                 <BorderBeam size={250} duration={12} delay={4} colorFrom="#a855f7" colorTo="#3b82f6" />
                 <CardHeader>
                   <div className="flex items-center justify-between mb-2">
@@ -100,7 +100,7 @@ export default function HomePage() {
                 <CardContent>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Articles</span>
-                    <span className="text-2xl font-bold text-purple-600">
+                    <span className="text-2xl font-bold text-purple-600 dark:text-purple-400">
                       <NumberTicker value={marketCounts.EU} delay={0.2} />
                     </span>
                   </div>
@@ -110,7 +110,7 @@ export default function HomePage() {
 
             {/* Asian Markets */}
             <Link to="/markets/ASIA">
-              <Card className="relative hover:shadow-lg transition-shadow cursor-pointer h-full overflow-hidden">
+              <Card className="relative hover:shadow-lg dark:hover:shadow-orange-500/20 transition-shadow cursor-pointer h-full overflow-hidden">
                 <BorderBeam size={250} duration={12} delay={8} colorFrom="#f97316" colorTo="#eab308" />
                 <CardHeader>
                   <div className="flex items-center justify-between mb-2">
@@ -124,7 +124,7 @@ export default function HomePage() {
                 <CardContent>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Articles</span>
-                    <span className="text-2xl font-bold text-orange-600">
+                    <span className="text-2xl font-bold text-orange-600 dark:text-orange-400">
                       <NumberTicker value={marketCounts.ASIA} delay={0.4} />
                     </span>
                   </div>

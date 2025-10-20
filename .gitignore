@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Mahiro Lab session state (ephemeral documentation)
+.mahirolab/state/

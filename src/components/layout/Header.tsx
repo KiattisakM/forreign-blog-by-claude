@@ -4,6 +4,7 @@ import { Search, Menu, X, TrendingUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
+import { ThemeToggleButton } from '@/components/ThemeToggle'
 
 export function Header() {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
@@ -38,8 +39,11 @@ export function Header() {
           ))}
         </nav>
 
-        {/* Search & Mobile Menu */}
+        {/* Search, Theme Toggle & Mobile Menu */}
         <div className="flex items-center gap-2">
+          {/* Theme Toggle */}
+          <ThemeToggleButton />
+
           {/* Search Toggle */}
           {isSearchOpen ? (
             <div className="flex items-center gap-2">
@@ -91,6 +95,12 @@ export function Header() {
                     {item.name}
                   </Link>
                 ))}
+                <div className="mt-4 pt-4 border-t">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Theme</span>
+                    <ThemeToggleButton />
+                  </div>
+                </div>
               </div>
             </SheetContent>
           </Sheet>
