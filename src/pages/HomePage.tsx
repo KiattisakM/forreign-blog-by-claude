@@ -9,6 +9,7 @@ import { GridPattern } from '@/components/magicui/grid-pattern'
 import { NumberTicker } from '@/components/magicui/number-ticker'
 import { ShimmerButton } from '@/components/magicui/shimmer-button'
 import { BorderBeam } from '@/components/magicui/border-beam'
+import { SEO } from '@/components/SEO'
 import { mockStockArticles } from '@/data/mockStockArticles'
 import { StockMarket } from '@/types'
 
@@ -25,6 +26,10 @@ export default function HomePage() {
 
   return (
     <MainLayout>
+      <SEO
+        title="Home"
+        description="Your gateway to international stock markets. Expert analysis, insights, and education on US, European, and Asian stocks."
+      />
       {/* Hero Section */}
       <section className="relative py-12 md:py-20 bg-gradient-to-b from-primary/5 to-background overflow-hidden">
         <GridPattern className="absolute inset-0 opacity-50" />
