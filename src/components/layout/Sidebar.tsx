@@ -1,6 +1,8 @@
 import { Filter } from 'lucide-react'
 import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { FilterCheckbox } from '@/components/FilterCheckbox'
 import { StockMarket, Sector } from '@/types'
 
 interface SidebarProps {
@@ -20,37 +22,27 @@ export function Sidebar({
 }: SidebarProps) {
   const markets = Object.values(StockMarket)
   const sectors = Object.values(Sector)
-
-  const handleMarketToggle = (market: StockMarket) => {
-    if (!onMarketChange) return
-    const newMarkets = selectedMarkets.includes(market)
-      ? selectedMarkets.filter((m) => m !== market)
-      : [...selectedMarkets, market]
-    onMarketChange(newMarkets)
-  }
-
-  const handleSectorToggle = (sector: Sector) => {
-    if (!onSectorChange) return
-    const newSectors = selectedSectors.includes(sector)
-      ? selectedSectors.filter((s) => s !== sector)
-      : [...selectedSectors, sector]
-    onSectorChange(newSectors)
-  }
+  const totalSelected = selectedMarkets.length + selectedSectors.length
 
   return (
     <aside className="w-full space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-2">
-          <Filter className="h-5 w-5" />
+          <Filter className="h-5 w-5 text-primary" />
           <h2 className="font-semibold text-lg">Filters</h2>
+          {totalSelected > 0 && (
+            <Badge variant="secondary" className="h-5 px-2 text-xs">
+              {totalSelected}
+            </Badge>
+          )}
         </div>
-        {(selectedMarkets.length > 0 || selectedSectors.length > 0) && (
+        {totalSelected > 0 && (
           <Button
             variant="ghost"
             size="sm"
             onClick={onClearFilters}
-            className="h-auto p-0 text-xs"
+            className="h-auto py-1 px-2 text-xs hover:text-destructive"
           >
             Clear all
           </Button>
@@ -61,21 +53,24 @@ export function Sidebar({
 
       {/* Markets */}
       <div className="space-y-3">
-        <h3 className="font-medium text-sm text-muted-foreground">Markets</h3>
-        <div className="space-y-2">
+        <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+          Markets
+        </h3>
+        <div className="space-y-1">
           {markets.map((market) => (
-            <label
+            <FilterCheckbox
               key={market}
-              className="flex items-center gap-2 cursor-pointer"
-            >
-              <input
-                type="checkbox"
-                checked={selectedMarkets.includes(market)}
-                onChange={() => handleMarketToggle(market)}
-                className="rounded border-gray-300 text-primary focus:ring-primary"
-              />
-              <span className="text-sm">{market}</span>
-            </label>
+              id={`market-${market}`}
+              label={market}
+              checked={selectedMarkets.includes(market)}
+              onCheckedChange={(checked) => {
+                if (!onMarketChange) return
+                const newMarkets = checked
+                  ? [...selectedMarkets, market]
+                  : selectedMarkets.filter((m) => m !== market)
+                onMarketChange(newMarkets)
+              }}
+            />
           ))}
         </div>
       </div>
@@ -84,21 +79,24 @@ export function Sidebar({
 
       {/* Sectors */}
       <div className="space-y-3">
-        <h3 className="font-medium text-sm text-muted-foreground">Sectors</h3>
-        <div className="space-y-2">
+        <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+          Sectors
+        </h3>
+        <div className="space-y-1">
           {sectors.map((sector) => (
-            <label
+            <FilterCheckbox
               key={sector}
-              className="flex items-center gap-2 cursor-pointer"
-            >
-              <input
-                type="checkbox"
-                checked={selectedSectors.includes(sector)}
-                onChange={() => handleSectorToggle(sector)}
-                className="rounded border-gray-300 text-primary focus:ring-primary"
-              />
-              <span className="text-sm">{sector}</span>
-            </label>
+              id={`sector-${sector}`}
+              label={sector}
+              checked={selectedSectors.includes(sector)}
+              onCheckedChange={(checked) => {
+                if (!onSectorChange) return
+                const newSectors = checked
+                  ? [...selectedSectors, sector]
+                  : selectedSectors.filter((s) => s !== sector)
+                onSectorChange(newSectors)
+              }}
+            />
           ))}
         </div>
       </div>
