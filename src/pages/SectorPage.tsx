@@ -1,29 +1,84 @@
-import { useState, useMemo } from 'react'
-import { useParams, Navigate } from 'react-router-dom'
+import { useMemo, useCallback } from 'react'
+import { useParams, useSearchParams, Navigate } from 'react-router-dom'
 import { Search, SlidersHorizontal, Layers } from 'lucide-react'
 import { MainLayout } from '@/components/layout/MainLayout'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { StockArticleCard } from '@/components/StockArticleCard'
+import { CopyLinkButton } from '@/components/CopyLinkButton'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { mockStockArticles } from '@/data/mockStockArticles'
 import { StockMarket, Sector } from '@/types'
+import {
+  serializeArray,
+  deserializeArray,
+  validateMarkets,
+  validateSort,
+  deserializeSearch,
+} from '@/lib/urlParams'
 
 type SortOption = 'newest' | 'oldest' | 'readTime' | 'category'
 
 export default function SectorPage() {
   const { sector } = useParams<{ sector: string }>()
+  const [searchParams, setSearchParams] = useSearchParams()
 
   // Validate sector parameter
   const validSector = Object.values(Sector).includes(sector as Sector)
     ? (sector as Sector)
     : null
 
-  const [selectedMarkets, setSelectedMarkets] = useState<StockMarket[]>([])
-  const [searchQuery, setSearchQuery] = useState('')
-  const [sortBy, setSortBy] = useState<SortOption>('newest')
+  // Parse state from URL
+  const selectedMarkets = useMemo(() => {
+    const markets = deserializeArray(searchParams.get('markets'))
+    return validateMarkets(markets)
+  }, [searchParams])
+
+  const searchQuery = useMemo(() =>
+    deserializeSearch(searchParams.get('q')),
+    [searchParams]
+  )
+
+  const sortBy = useMemo(() =>
+    validateSort(searchParams.get('sort'), 'newest') as SortOption,
+    [searchParams]
+  )
+
+  // Update URL state
+  const setSelectedMarkets = useCallback((markets: StockMarket[]) => {
+    setSearchParams(prev => {
+      if (markets.length > 0) {
+        prev.set('markets', serializeArray(markets))
+      } else {
+        prev.delete('markets')
+      }
+      return prev
+    }, { replace: true })
+  }, [setSearchParams])
+
+  const setSearchQuery = useCallback((query: string) => {
+    setSearchParams(prev => {
+      if (query.trim()) {
+        prev.set('q', query.trim())
+      } else {
+        prev.delete('q')
+      }
+      return prev
+    }, { replace: true })
+  }, [setSearchParams])
+
+  const setSortBy = useCallback((sort: SortOption) => {
+    setSearchParams(prev => {
+      if (sort !== 'newest') {
+        prev.set('sort', sort)
+      } else {
+        prev.delete('sort')
+      }
+      return prev
+    }, { replace: true })
+  }, [setSearchParams])
 
   // Redirect if invalid sector
   if (!validSector) {
@@ -75,10 +130,9 @@ export default function SectorPage() {
     return sorted
   }, [validSector, selectedMarkets, searchQuery, sortBy])
 
-  const handleClearFilters = () => {
-    setSelectedMarkets([])
-    setSearchQuery('')
-  }
+  const handleClearFilters = useCallback(() => {
+    setSearchParams({}, { replace: true })
+  }, [setSearchParams])
 
   const hasActiveFilters = selectedMarkets.length > 0 || searchQuery.trim()
 
@@ -165,20 +219,25 @@ export default function SectorPage() {
           </div>
 
           <div>
-            <div className="mb-6 flex items-center justify-between">
+            <div className="mb-6 flex items-center justify-between flex-wrap gap-2">
               <p className="text-sm text-muted-foreground">
                 Found {filteredAndSortedArticles.length} articles
               </p>
-              {hasActiveFilters && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleClearFilters}
-                  className="text-xs"
-                >
-                  Clear filters
-                </Button>
-              )}
+              <div className="flex items-center gap-2">
+                {hasActiveFilters && (
+                  <>
+                    <CopyLinkButton />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleClearFilters}
+                      className="text-xs"
+                    >
+                      Clear filters
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
 
             {filteredAndSortedArticles.length > 0 ? (
