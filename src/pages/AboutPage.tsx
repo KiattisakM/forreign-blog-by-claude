@@ -9,7 +9,7 @@ import { Separator } from '@/components/ui/separator'
 export default function AboutPage() {
   return (
     <MainLayout>
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="text-center mb-12">
           <div className="flex justify-center mb-4">

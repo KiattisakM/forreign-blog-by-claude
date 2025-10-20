@@ -63,7 +63,7 @@ export default function ArticleDetailPage() {
 
   return (
     <MainLayout>
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         {/* Back Button */}
         <Button asChild variant="ghost" className="mb-6">
           <Link to="/articles">

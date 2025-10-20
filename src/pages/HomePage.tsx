@@ -28,7 +28,7 @@ export default function HomePage() {
       {/* Hero Section */}
       <section className="relative py-12 md:py-20 bg-gradient-to-b from-primary/5 to-background overflow-hidden">
         <GridPattern className="absolute inset-0 opacity-50" />
-        <div className="container mx-auto px-4 text-center relative z-10">
+        <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center relative z-10">
           <div className="flex justify-center mb-6">
             <Globe2 className="h-16 w-16 text-primary" />
           </div>
@@ -57,7 +57,7 @@ export default function HomePage() {
 
       {/* Market Overview Section */}
       <section className="py-12 border-t">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold mb-8 text-center">Explore Markets</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* US Markets */}
@@ -137,7 +137,7 @@ export default function HomePage() {
 
       {/* Featured Articles Section */}
       <section className="py-12 bg-muted/30">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
               <TrendingUp className="h-8 w-8 text-primary" />
@@ -157,7 +157,7 @@ export default function HomePage() {
 
       {/* CTA Section */}
       <section className="py-16 bg-primary text-primary-foreground">
-        <div className="container mx-auto px-4 text-center">
+        <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl font-bold mb-4">Stay Informed About Global Markets</h2>
           <p className="text-lg mb-8 opacity-90 max-w-2xl mx-auto">
             Join thousands of investors who rely on our analysis to make better investment decisions across international markets.
