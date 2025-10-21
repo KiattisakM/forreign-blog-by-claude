@@ -24,7 +24,7 @@ type SortOption = 'newest' | 'oldest' | 'readTime' | 'category'
 export default function SectorPage() {
   const { sector } = useParams<{ sector: string }>()
   const [searchParams, setSearchParams] = useSearchParams()
-  const [, startTransition] = useTransition()
+  const [isPending, startTransition] = useTransition()
 
   // Validate sector parameter
   const validSector = Object.values(Sector).includes(sector as Sector)
@@ -157,6 +157,16 @@ export default function SectorPage() {
           </p>
         </div>
 
+        {/* Loading Indicator */}
+        {isPending && (
+          <div className="fixed top-20 right-4 z-50 bg-primary text-primary-foreground px-4 py-2 rounded-md shadow-lg animate-in slide-in-from-top-2">
+            <div className="flex items-center gap-2">
+              <div className="h-4 w-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+              <span className="text-sm font-medium">Updating filters...</span>
+            </div>
+          </div>
+        )}
+
         {/* Search and Sort Bar */}
         <div className="flex flex-col md:flex-row gap-4 mb-6">
           <div className="flex-1 relative">
@@ -167,10 +177,11 @@ export default function SectorPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
+              disabled={isPending}
             />
           </div>
 
-          <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
+          <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)} disabled={isPending}>
             <SelectTrigger className="w-full md:w-[200px]">
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
