@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from 'react'
+import { useMemo, useCallback, useTransition } from 'react'
 import { useParams, useSearchParams, Navigate } from 'react-router-dom'
 import { Search, SlidersHorizontal, TrendingUp } from 'lucide-react'
 import { MainLayout } from '@/components/layout/MainLayout'
@@ -24,6 +24,7 @@ type SortOption = 'newest' | 'oldest' | 'readTime' | 'category'
 export default function MarketPage() {
   const { market } = useParams<{ market: string }>()
   const [searchParams, setSearchParams] = useSearchParams()
+  const [, startTransition] = useTransition()
 
   // Validate market parameter
   const validMarket = Object.values(StockMarket).includes(market as StockMarket)
@@ -48,25 +49,29 @@ export default function MarketPage() {
 
   // Update URL state
   const setSelectedSectors = useCallback((sectors: Sector[]) => {
-    setSearchParams(prev => {
-      if (sectors.length > 0) {
-        prev.set('sectors', serializeArray(sectors))
-      } else {
-        prev.delete('sectors')
-      }
-      return prev
-    }, { replace: true })
+    startTransition(() => {
+      setSearchParams(prev => {
+        if (sectors.length > 0) {
+          prev.set('sectors', serializeArray(sectors))
+        } else {
+          prev.delete('sectors')
+        }
+        return prev
+      }, { replace: true })
+    })
   }, [setSearchParams])
 
   const setSearchQuery = useCallback((query: string) => {
-    setSearchParams(prev => {
-      if (query.trim()) {
-        prev.set('q', query.trim())
-      } else {
-        prev.delete('q')
-      }
-      return prev
-    }, { replace: true })
+    startTransition(() => {
+      setSearchParams(prev => {
+        if (query.trim()) {
+          prev.set('q', query.trim())
+        } else {
+          prev.delete('q')
+        }
+        return prev
+      }, { replace: true })
+    })
   }, [setSearchParams])
 
   const setSortBy = useCallback((sort: SortOption) => {

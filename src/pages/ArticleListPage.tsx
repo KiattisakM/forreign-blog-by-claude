@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from 'react'
+import { useMemo, useCallback, useTransition } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Search, SlidersHorizontal } from 'lucide-react'
 import { MainLayout } from '@/components/layout/MainLayout'
@@ -24,6 +24,7 @@ type SortOption = 'newest' | 'oldest' | 'readTime' | 'category'
 
 export default function ArticleListPage() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const [, startTransition] = useTransition()
 
   // Parse state from URL
   const selectedMarkets = useMemo(() => {
@@ -48,36 +49,42 @@ export default function ArticleListPage() {
 
   // Update URL state
   const setSelectedMarkets = useCallback((markets: StockMarket[]) => {
-    setSearchParams(prev => {
-      if (markets.length > 0) {
-        prev.set('markets', serializeArray(markets))
-      } else {
-        prev.delete('markets')
-      }
-      return prev
-    }, { replace: true })
+    startTransition(() => {
+      setSearchParams(prev => {
+        if (markets.length > 0) {
+          prev.set('markets', serializeArray(markets))
+        } else {
+          prev.delete('markets')
+        }
+        return prev
+      }, { replace: true })
+    })
   }, [setSearchParams])
 
   const setSelectedSectors = useCallback((sectors: Sector[]) => {
-    setSearchParams(prev => {
-      if (sectors.length > 0) {
-        prev.set('sectors', serializeArray(sectors))
-      } else {
-        prev.delete('sectors')
-      }
-      return prev
-    }, { replace: true })
+    startTransition(() => {
+      setSearchParams(prev => {
+        if (sectors.length > 0) {
+          prev.set('sectors', serializeArray(sectors))
+        } else {
+          prev.delete('sectors')
+        }
+        return prev
+      }, { replace: true })
+    })
   }, [setSearchParams])
 
   const setSearchQuery = useCallback((query: string) => {
-    setSearchParams(prev => {
-      if (query.trim()) {
-        prev.set('q', query.trim())
-      } else {
-        prev.delete('q')
-      }
-      return prev
-    }, { replace: true })
+    startTransition(() => {
+      setSearchParams(prev => {
+        if (query.trim()) {
+          prev.set('q', query.trim())
+        } else {
+          prev.delete('q')
+        }
+        return prev
+      }, { replace: true })
+    })
   }, [setSearchParams])
 
   const setSortBy = useCallback((sort: SortOption) => {
