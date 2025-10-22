@@ -4,7 +4,8 @@
 
 | What You Need | Go To |
 | --- | --- |
-| **Quick start with shortcodes** (ccc, nnn, gogogo, rrr, lll) | [`.mahirolab/docs/SHORTCODES.md`](.mahirolab/docs/SHORTCODES.md) |
+| **Quick start with shortcodes** (ccc, nnn, gogogo, rrr, lll, rrresearch, www) | [`.mahirolab/docs/SHORTCODES.md`](.mahirolab/docs/SHORTCODES.md) |
+| **State management & session continuity** (versioning, progress tracking, analytics) | [`.mahirolab/docs/STATE_MANAGEMENT.md`](.mahirolab/docs/STATE_MANAGEMENT.md) |
 | **Complete project overview** (directory layout, all scripts, workflows) | [`.mahirolab/docs/PROJECT_STRUCTURE.md`](.mahirolab/docs/PROJECT_STRUCTURE.md) |
 | **Git commit standards** (conventional commits, emoji guide) | [`.mahirolab/docs/COMMIT_GUIDE.md`](.mahirolab/docs/COMMIT_GUIDE.md) |
 | **Core script usage** (codex-exec, codex-research, codex-worker-launcher) | [Helper Scripts](#helper-scripts) below |
@@ -67,6 +68,8 @@ All scripts located in `.mahirolab/bin/`
 - **Usage:** `./codex-research.sh "research topic"` (required argument).
 - **Behavior:**
   - Sanitizes the topic into a slug, prepends a timestamp, and ensures `.mahirolab/research/` exists.
+  - **Auto-loads template** from `.mahirolab/templates/research-report.md` if available.
+  - Injects template structure into prompt with variable substitution ({{TOPIC}}, {{DATE}}, {{REASONING_LEVEL}}).
   - Supplies a fixed prompt template enforcing sections such as Executive Summary and Key Findings, plus plain-URL citations.
   - Forces `model_reasoning_effort="medium"` and runs with `danger-full-access`.
 - **Output:** Markdown report saved once Codex honors the `Save output to:` instruction (the agent replaces `PLACEHOLDER` with its own PID).
@@ -79,6 +82,8 @@ All scripts located in `.mahirolab/bin/`
   - Shorthand: `./codex-worker-launcher.sh "task"` (defaults to `low` reasoning and `workers` output type).
 - **Behavior:**
   - Creates a timestamped temp file under `.mahirolab/<output_type>/`.
+  - **Auto-loads template** from `.mahirolab/templates/worker-task.md` if available.
+  - Injects template with pre-filled metadata ({{TASK_DESCRIPTION}}, {{START_TIME}}, {{REASONING_LEVEL}}).
   - Spawns `codex exec` in a subshell, captures the Bash PID, and waits for the agent to write the temp file.
   - Renames the file to `<timestamp>_<bashpid>_codex_task.md` for traceability once writing finishes.
 - **Suggested monitoring pattern:**
@@ -108,6 +113,79 @@ All scripts located in `.mahirolab/bin/`
 - ✅ Unit tests, API endpoints, and large-scale refactors
 - ✅ Structured research reports with plain-URL citations
 - ✅ Parallel or long-running workers with PID-tagged logs
+- ✅ Template auto-injection for consistent output formatting
+- ✅ State management with context versioning
+- ✅ Session continuity and progress tracking
+
+## State Management & Session Continuity
+
+### Overview
+The `.mahirolab` architecture includes comprehensive state management for tracking session history, progress, and analytics.
+
+**Key Features:**
+- **Context Versioning** - Every session creates a versioned context snapshot
+- **Progress Tracking** - Real-time task execution monitoring with timestamps and ETA
+- **Session Continuity** - Seamlessly continue from previous sessions or start fresh
+- **State Analytics** - Productivity metrics, success rates, and time tracking
+- **Archive Policy** - Safe data preservation without automatic deletion
+
+### Directory Structure
+
+```
+.mahirolab/state/
+├── context.md                    # Current session context
+├── context_history/              # Versioned context snapshots
+├── plans/                        # Implementation plans
+├── retrospectives/               # Session retrospectives
+├── progress.md                   # Real-time execution progress
+├── execution_log.md              # Detailed event timeline
+└── archive/                      # Archived old files
+```
+
+### Template Auto-Injection
+
+Scripts automatically inject templates for consistent output:
+- **`codex-research.sh`** - Uses `.mahirolab/templates/research-report.md`
+- **`codex-worker-launcher.sh`** - Uses `.mahirolab/templates/worker-task.md`
+- Templates support variable substitution: `{{TOPIC}}`, `{{DATE}}`, `{{REASONING_LEVEL}}`
+- Graceful fallback if templates are missing
+
+### Session Workflow
+
+**Typical Session:**
+```bash
+lll                    # Check project status and history
+ccc                    # Continue from previous session or start fresh
+nnn                    # Create implementation plan (auto-references context)
+gogogo                 # Execute plan with real-time progress tracking
+rrr                    # Create retrospective at session end
+```
+
+**Session Continuity:**
+- `ccc` detects existing context and prompts: "Continue or Start Fresh?"
+- If continuing: Shows diff, merges with previous session
+- If fresh: Archives old context, creates new one
+- All contexts versioned in `context_history/`
+
+### Progress Tracking
+
+During `gogogo` execution:
+- Real-time updates to `progress.md`
+- Timestamp tracking for every task
+- Progress bars for overall and per-phase status
+- ETA calculation based on completed tasks
+- Detailed logging to `execution_log.md`
+
+### State Analytics
+
+View productivity metrics with `lll`:
+- Tasks completed vs. total
+- Success rate percentage
+- Average task duration
+- Session velocity (tasks/hour)
+- Storage usage and growth trends
+
+**For complete details**, see [`.mahirolab/docs/STATE_MANAGEMENT.md`](.mahirolab/docs/STATE_MANAGEMENT.md)
 
 ## New Utility Scripts
 
@@ -131,23 +209,6 @@ All scripts located in `.mahirolab/bin/`
   - Dry-run mode for safety
 - **Options:** `--dry-run`, `--age DAYS`, `--compress-only`, `--stats`, `--force`
 
-## Configuration System
-
-### `codex.yaml`
-Optional configuration file for reference (not actively used by scripts):
-```yaml
-default_reasoning: low
-output_dir: .mahirolab
-auto_cleanup:
-  enabled: true
-  max_age_days: 7
-workers:
-  max_parallel: 3
-  timeout_seconds: 600
-```
-
-Scripts use hardcoded defaults for simplicity. Modify individual scripts directly for custom settings.
-
 ## Examples Library
 
 Pre-built example scripts in `.mahirolab/examples/`:
@@ -165,16 +226,15 @@ Each example includes:
 
 ## Templates Library
 
-Markdown templates in `.mahirolab/templates/`:
+Markdown templates in `.mahirolab/templates/` (for manual reference):
 - `research-report.md` - Structured research output
 - `worker-task.md` - Background task reports
 - `code-review.md` - Comprehensive code reviews
 
-Templates include:
-- Consistent formatting
-- Placeholder variables (`{{TOPIC}}`, `{{DATE}}`, etc.)
-- Section guidelines
-- Example content
+Templates are **reference-only** and not automatically integrated with scripts. Use them manually by:
+- Copying template structure into prompts
+- Referencing format in task descriptions
+- Using as documentation guidelines
 
 ## Maintenance & Hardening
 
@@ -190,7 +250,6 @@ Templates include:
 - Template integration with research/worker scripts
 - Pipeline orchestration (YAML-based workflows)
 - Retry logic with exponential backoff
-- Configuration loader for codex.yaml
 - Web UI for job monitoring
 - Metrics and analytics dashboard
 
@@ -198,12 +257,63 @@ Templates include:
 
 ## Communication Protocol
 
-For efficient collaboration between User and Claude, use **Shortcodes** defined in [docs/SHORTCODES.md](docs/SHORTCODES.md):
+For efficient collaboration between User and Claude, use **Shortcodes** defined in [`.mahirolab/docs/SHORTCODES.md`](.mahirolab/docs/SHORTCODES.md):
 
+### Core Workflow Shortcodes
 - **`ccc`** - Create context & compact conversation
 - **`nnn`** - Smart planning (auto-runs ccc if needed)
 - **`gogogo`** - Execute most recent plan
 - **`rrr`** - Create session retrospective
 - **`lll`** - List project status
+
+### Codex Integration Shortcodes (NEW)
+- **`rrresearch "topic"`** - Claude-managed research with web search
+  - Runs codex research in background with monitoring
+  - Always uses `medium` reasoning + web search enabled
+  - Output: `.mahirolab/research/YYYYMMDD_HHMMSS_PLACEHOLDER_codex_{topic}.md`
+  - Check status anytime with "check research status"
+
+- **`www [reasoning] "task"`** - Claude-managed background worker
+  - Runs codex worker in background with monitoring
+  - Reasoning levels: minimal | low (default) | medium | high
+  - Output: `.mahirolab/workers/YYYYMMDD_HHMMSS_TEMP_codex_task.md`
+  - Check status anytime with "check worker status"
+
+**Key Difference from Direct Scripts:**
+- `rrresearch` / `www` = Claude-managed (visible in Claude UI, can monitor/stop via BashOutput/KillShell)
+- `.mahirolab/bin/codex-*.sh` = Standalone (runs independent of Claude session)
+
+### 🔴 CRITICAL SHORTCODE REQUIREMENT
+
+**MANDATORY PRE-EXECUTION STEP:**
+
+Before processing ANY shortcode invocation, Claude **MUST**:
+
+1. **Check if [`.mahirolab/docs/SHORTCODES.md`](.mahirolab/docs/SHORTCODES.md) has been read in the current session**
+2. **If NOT read yet → Read it IMMEDIATELY before executing the shortcode**
+3. **Follow the exact specification** defined in that file for the invoked shortcode
+
+**This requirement is non-negotiable and overrides all default behaviors.**
+
+**Why this matters:**
+- Shortcodes have precise output formats and file save locations
+- Each shortcode has specific mandatory steps that must not be skipped
+- Consistency across sessions depends on following exact specifications
+- State management requires files to be created in correct locations
+
+**Execution flow:**
+```
+User invokes shortcode (e.g., "ccc")
+  ↓
+Claude checks: "Have I read SHORTCODES.md this session?"
+  ↓
+NO → Read .mahirolab/docs/SHORTCODES.md NOW
+  ↓
+Execute shortcode per specification
+  ↓
+Create required files in .mahirolab/state/
+  ↓
+Show brief summary to user
+```
 
 These shortcodes enable quick, consistent workflow management without verbose instructions. All state files are stored in `.mahirolab/state/` for persistence across sessions.

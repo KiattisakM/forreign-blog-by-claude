@@ -1,6 +1,6 @@
 # Claude Shortcode Protocol
 
-Protocol สำหรับการสื่อสารระหว่าง User และ Claude ในการทำงานร่วมกันผ่าน Codex Architecture
+Communication protocol between User and Claude for collaborative work through Codex Architecture.
 
 ---
 
@@ -8,17 +8,24 @@ Protocol สำหรับการสื่อสารระหว่าง U
 
 ### `ccc` - Create Context & Compact
 
-**Purpose:** สรุปและบีบอัด conversation ปัจจุบัน
+**Purpose:** Summarize current conversation with session continuity support
 
 **Claude Action:**
-1. วิเคราะห์ conversation ที่ผ่านมา
-2. สรุปประเด็นสำคัญ:
-   - เป้าหมายหลักของ session
-   - สิ่งที่ทำไปแล้ว
-   - การตัดสินใจที่สำคัญ
-   - ปัญหาที่พบและแก้ไข
-3. สร้าง context file: `.mahirolab/state/context.md`
-4. แสดง summary กลับมาให้ user ดู
+1. Check for existing context in `.mahirolab/state/context.md`
+2. If context exists:
+   - Prompt user: "Continue from previous session or Start fresh?"
+   - **[1] Continue:** Show diff → Ask confirmation → Merge contexts
+   - **[2] Fresh:** Archive old context → Create new one
+3. Create versioned copy in `.mahirolab/state/context_history/context_vN_YYYYMMDD.md`
+4. Update `.mahirolab/state/context.md` with current/merged context
+5. Display summary to user
+
+**Session Continuity:**
+- Every `ccc` execution creates a new version in `context_history/`
+- Version format: `context_vN_YYYYMMDD.md` (N = sequential number)
+- "Continue" mode merges old goals, tasks, decisions with new information
+- "Fresh" mode archives old context completely but keeps it accessible
+- All changes logged to `execution_log.md`
 
 **Output Format:**
 ```markdown
@@ -51,23 +58,31 @@ Protocol สำหรับการสื่อสารระหว่าง U
 ```
 
 **When to Use:**
-- เริ่มต้น session ใหม่
-- ก่อนจะวาง plan
-- เมื่อ conversation ยาวเกินไป
-- ก่อนจะสลับ context ไปเรื่องอื่น
+- Starting a new session
+- Before creating a plan
+- When conversation becomes too long
+- Before switching context to another topic
 
 ---
 
 ### `nnn` - Smart Planning
 
-**Purpose:** สร้าง implementation plan แบบละเอียด
+**Purpose:** Create a detailed implementation plan
 
 **Claude Action:**
-1. ตรวจสอบว่ามี context ล่าสุดหรือไม่ (อายุ < 1 ชั่วโมง)
-   - ถ้าไม่มีหรือเก่า → รัน `ccc` ก่อนอัตโนมัติ
-2. อ่าน `.mahirolab/state/context.md`
-3. สร้าง detailed plan: `.mahirolab/state/plan_YYYYMMDD_HHMMSS.md`
-4. แสดง plan overview
+1. Check if recent context exists (age < 1 hour)
+   - If missing or outdated → run `ccc` automatically first
+2. Read `.mahirolab/state/context.md` and latest context version from `context_history/`
+3. Create detailed plan: `.mahirolab/state/plans/plan_YYYYMMDD_HHMMSS.md`
+4. Reference context version in plan header
+5. Check prerequisites from context
+6. Display plan overview
+
+**New Behavior:**
+- Plans saved to `.mahirolab/state/plans/` (not root state/)
+- Plan includes reference to context version used
+- Prerequisites checked against context
+- Supports new directory structure
 
 **Output Format:**
 ```markdown
@@ -116,51 +131,77 @@ Protocol สำหรับการสื่อสารระหว่าง U
 ```
 
 **When to Use:**
-- เมื่อต้องการแผนงานที่ชัดเจน
-- ก่อนเริ่มงานใหญ่ๆ
-- เมื่อต้องการ break down complex task
+- When you need a clear plan
+- Before starting major work
+- When you need to break down complex tasks
 
 ---
 
 ### `gogogo` - Execute Plan
 
-**Purpose:** เริ่มดำเนินการตาม plan ล่าสุด
+**Purpose:** Start executing the most recent plan with real-time progress tracking
 
 **Claude Action:**
-1. อ่าน plan ล่าสุดจาก `.mahirolab/state/`
-2. ถามยืนยันก่อนเริ่ม (ถ้า user ไม่ได้บอกให้ skip)
-3. Execute tasks ทีละ step:
-   - แสดง task ที่กำลังทำ
-   - ทำงานตาม specification
-   - Update progress ใน `.mahirolab/state/progress.md`
-   - ถามก่อนไป step ถัดไปถ้าเป็น critical task
-4. Report หลังจบแต่ละ phase
+1. Read the latest plan from `.mahirolab/state/plans/`
+2. Initialize `.mahirolab/state/progress.md` with plan structure
+3. Ask for confirmation before starting (unless user says to skip)
+4. Execute tasks step by step:
+   - Mark task as 🔄 In Progress with start timestamp
+   - Display current task and step being worked on
+   - Update "Current step" during execution
+   - On completion: Mark ✅, record end timestamp, calculate duration
+   - On failure: Mark ❌, log error, add to blockers, STOP execution
+5. Update progress bars after each task
+6. Calculate ETA based on completed tasks
+7. Report after each phase completes
+8. Update `execution_log.md` with detailed timeline
+
+**Real-Time Progress Tracking:**
+- Updates `progress.md` continuously with timestamps
+- Shows progress bars: `[████████░░░░░░░░░░░░] 40% (6/15 tasks)`
+- Displays ETA based on average task duration
+- Logs every significant action to `execution_log.md`
+- Status emojis: 🔄 In Progress, ✅ Completed, ⏳ Pending, ❌ Failed
 
 **Execution Behavior:**
-- **Sequential by default:** ทำทีละ task ตามลำดับ
-- **Stop on error:** หยุดถ้าเจอ error, รอ user แก้
-- **Progress tracking:** Update checkbox ใน plan file
-- **Logging:** บันทึกทุก action ลง `.mahirolab/state/execution_log.md`
+- **Sequential by default:** Execute tasks one at a time in order
+- **Stop on error:** Halt if error encountered, wait for user to fix
+- **Progress tracking:** Real-time updates to progress.md
+- **Logging:** Detailed timeline in execution_log.md
 
 **When to Use:**
-- เมื่อพร้อมจะเริ่มทำตาม plan
-- เมื่ออยากให้ Claude ทำแบบ autonomous
-- เมื่อมี plan ที่ชัดเจนแล้ว
+- When ready to execute the plan
+- When you want Claude to work autonomously
+- When you have a clear plan ready
 
 ---
 
 ### `rrr` - Retrospective
 
-**Purpose:** สร้าง session retrospective
+**Purpose:** Create comprehensive session retrospective with metrics
 
 **Claude Action:**
-1. อ่าน:
-   - `.mahirolab/state/context.md`
-   - `.mahirolab/state/plan_*.md`
-   - `.mahirolab/state/progress.md`
+1. Gather data from:
+   - `.mahirolab/state/context.md` and `context_history/` (latest version)
+   - `.mahirolab/state/plans/` (latest plan)
+   - `.mahirolab/state/progress.md` (task completion data)
+   - `.mahirolab/state/execution_log.md` (timeline and events)
    - Conversation history
-2. วิเคราะห์และสร้าง retrospective
-3. บันทึกลง `.mahirolab/state/retrospective_YYYYMMDD.md`
+2. Calculate session metrics:
+   - Tasks completed vs. total
+   - Time spent (from timestamps)
+   - Success rate
+   - Issues encountered
+3. Create comprehensive retrospective
+4. Save to `.mahirolab/state/retrospectives/retrospective_YYYYMMDD.md`
+5. Update `execution_log.md` with retrospective creation
+
+**New Behavior:**
+- Retrospectives saved to `.mahirolab/state/retrospectives/` (not root state/)
+- Includes analytics metrics if available
+- References both context version and plan used
+- Comprehensive session summary with learnings
+- Supports new directory structure
 
 **Output Format:**
 ```markdown
@@ -207,24 +248,35 @@ Protocol สำหรับการสื่อสารระหว่าง U
 ```
 
 **When to Use:**
-- จบ session
-- จบ milestone ใหญ่
-- ทุกสัปดาห์ (weekly retro)
+- End of session
+- After completing major milestones
+- Weekly retrospectives
 
 ---
 
 ### `lll` - List Project Status
 
-**Purpose:** แสดงภาพรวมสถานะโปรเจกต์
+**Purpose:** Display comprehensive project status with progress bars and timeline
 
 **Claude Action:**
-1. แสดงข้อมูลจากหลายแหล่ง:
-   - Current context (ถ้ามี)
-   - Active plan (ถ้ามี)
-   - Recent progress
+1. Gather information from multiple sources:
+   - Current context from `.mahirolab/state/context.md`
+   - Context versions from `.mahirolab/state/context_history/`
+   - Active plan from `.mahirolab/state/plans/`
+   - Progress from `.mahirolab/state/progress.md`
    - Git status
-   - Recent codex jobs
-   - File structure changes
+   - Recent codex jobs from `.mahirolab/workers/` and `.mahirolab/research/`
+   - State storage metrics
+2. Calculate progress bars for phases and overall progress
+3. Build session timeline from `execution_log.md` (last 7 days)
+4. Generate analytics and recommendations
+5. Display enhanced dashboard
+
+**Enhanced Features:**
+- **Progress Bars:** Visual representation of task completion
+- **Session Timeline:** Last 7 days of sessions with completion percentages
+- **State Analytics:** Productivity metrics, success rates, storage usage
+- **Cleanup Recommendations:** Suggestions for maintenance
 
 **Output Format:**
 ```
@@ -233,9 +285,19 @@ Protocol สำหรับการสื่อสารระหว่าง U
 ╚════════════════════════════════════════╝
 
 📝 CURRENT CONTEXT
+  Session: 20251022_123918
   Last updated: 2 hours ago
   Main goal: [from context.md]
-  Status: In progress
+  Version: v2 (2 total)
+
+📊 PROGRESS
+  Overall: [████████░░░░░░░░░░░░] 40% (6/15 tasks)
+
+  Phase 1: Template Auto-injection
+  [████████████████████] 100% (4/4 tasks) ✅
+
+  Phase 2: State Management
+  [████░░░░░░░░░░░░░░░░] 20% (2/10 tasks) 🔄
 
 📋 ACTIVE PLAN
   Plan: plan_20250103_143000.md
@@ -260,13 +322,162 @@ Protocol สำหรับการสื่อสารระหว่าง U
 📁 KEY FILES MODIFIED
   - SHORTCODES.md (2 min ago)
   - CLAUDE.md (15 min ago)
-  - codex.yaml (1 hour ago)
+  - context.md (1 hour ago)
 ```
 
 **When to Use:**
-- เริ่มต้น session เพื่อดูว่าค้างอะไรไว้
-- Check progress ระหว่างทำงาน
-- ก่อนจะสลับไป task อื่น
+- Starting session to see what's pending
+- Check progress during work
+- Before switching to another task
+
+---
+
+## Codex Integration Shortcodes
+
+### `rrresearch` - Claude-Managed Research
+
+**Purpose:** Run codex research with Claude supervision and monitoring
+
+**Claude Action:**
+1. Accept research topic from user (format: `rrresearch "topic"`)
+2. Prepare research prompt with template injection from `.mahirolab/templates/research-report.md`
+3. Execute using Bash tool with `run_in_background: true`:
+   ```bash
+   codex exec -s danger-full-access \
+     -c tools.web_search=true \
+     -c model_reasoning_effort="medium" \
+     "[research prompt with template]"
+   ```
+4. Store bash_id for monitoring
+5. Notify user with job ID
+6. User can check progress anytime with status updates
+
+**Parameters:**
+- **Topic:** Research subject (required)
+- **Reasoning:** Always `medium` (fixed)
+- **Web Search:** Always enabled
+
+**Output:**
+- File: `.mahirolab/research/YYYYMMDD_HHMMSS_PLACEHOLDER_codex_{topic}.md`
+- Codex will replace PLACEHOLDER with its process ID
+- Template-based structured markdown report
+
+**Monitoring:**
+```
+User: Check research status
+Claude: [Uses BashOutput tool to show progress]
+```
+
+**When to Use:**
+- Need latest information from web
+- Want Claude to monitor research progress
+- Research task expected to take > 2 minutes
+- Want ability to check status during execution
+
+**Example:**
+```
+User: rrresearch "React 19 new features"
+Claude: 🔍 Starting research job...
+        Job ID: bash_12345
+        Topic: React 19 new features
+        Output: .mahirolab/research/20251022_141234_PLACEHOLDER_codex_react_19_new_features.md
+
+        ✅ Job running in background
+        Use "check status" to monitor progress
+```
+
+---
+
+### `www` - Claude-Managed Worker
+
+**Purpose:** Run codex background worker with Claude supervision
+
+**Claude Action:**
+1. Accept task description and optional parameters (format: `www [reasoning] "task"`)
+2. Parse parameters:
+   - Reasoning level (default: `low`)
+   - Output type (default: `workers`)
+   - Task description (required)
+3. Prepare worker prompt with template injection from `.mahirolab/templates/worker-task.md`
+4. Execute using Bash tool with `run_in_background: true`:
+   ```bash
+   codex exec -s danger-full-access \
+     -c model_reasoning_effort="{reasoning}" \
+     "[worker prompt with template]"
+   ```
+5. Store bash_id for monitoring
+6. Notify user with job ID
+7. User can check progress anytime
+
+**Parameters:**
+- **Reasoning:** minimal | low | medium | high (default: `low`)
+- **Output Type:** workers | research | custom (default: `workers`)
+- **Task:** Task description (required)
+
+**Output:**
+- File: `.mahirolab/{output_type}/YYYYMMDD_HHMMSS_TEMP_codex_task.md`
+- Will be renamed to include bash PID when complete
+- Template-based task report
+
+**Usage Patterns:**
+```
+www "task description"                    # low reasoning, workers output
+www medium "task description"             # medium reasoning, workers output
+www high workers "complex refactoring"    # high reasoning, workers output
+```
+
+**Monitoring:**
+```
+User: Check worker status
+Claude: [Uses BashOutput tool to show progress]
+```
+
+**When to Use:**
+- Long-running tasks (refactoring, analysis)
+- Want Claude to monitor worker progress
+- Need different reasoning levels for different tasks
+- Want ability to check status during execution
+
+**Example:**
+```
+User: www high "Refactor authentication system"
+Claude: 🚀 Starting worker job...
+        Job ID: bash_12346
+        Reasoning: high
+        Task: Refactor authentication system
+        Output: .mahirolab/workers/20251022_141500_TEMP_codex_task.md
+
+        ✅ Job running in background
+        Use "check status" to monitor progress
+```
+
+---
+
+### Monitoring Background Jobs
+
+**Check Status:**
+```
+User: Check [research/worker] status
+User: Show job status
+User: What's running?
+```
+
+**Claude Actions:**
+- Use `BashOutput` tool with stored bash_id
+- Display current progress and output
+- Show completion status
+- Provide file path when complete
+
+**Stop Job:**
+```
+User: Stop [research/worker]
+User: Cancel job
+```
+
+**Claude Actions:**
+- Use `KillShell` tool with bash_id
+- Confirm termination
+- Report final status
 
 ---
 
@@ -276,19 +487,45 @@ Protocol สำหรับการสื่อสารระหว่าง U
 ```
 .mahirolab/
 └── state/
-    ├── context.md              # Current session context
-    ├── plan_YYYYMMDD_HHMMSS.md # Implementation plans
-    ├── progress.md             # Execution progress tracking
-    ├── execution_log.md        # Detailed execution log
-    └── retrospective_YYYYMMDD.md # Session retrospectives
+    ├── context.md                    # Current session context
+    ├── context_history/              # Versioned context snapshots
+    │   ├── context_v1_20251022.md
+    │   ├── context_v2_20251022.md
+    │   └── context_v3_20251023.md
+    ├── plans/                        # All implementation plans
+    │   ├── plan_20251022_120000.md
+    │   └── plan_20251023_140000.md
+    ├── retrospectives/               # Session retrospectives
+    │   ├── retrospective_20251022.md
+    │   └── retrospective_20251023.md
+    ├── progress.md                   # Current execution progress
+    ├── execution_log.md              # Detailed event timeline
+    ├── archive/                      # Archived old files
+    │   ├── contexts/
+    │   ├── plans/
+    │   └── retrospectives/
+    └── analytics/                    # Analytics data (optional)
+        ├── context_metrics.json
+        └── session_metrics.json
 ```
 
 ### File Lifecycle
-1. **context.md** - Refreshed when run `ccc`
-2. **plan_*.md** - Created by `nnn`, executed by `gogogo`
-3. **progress.md** - Updated during `gogogo` execution
-4. **execution_log.md** - Appended during execution
-5. **retrospective_*.md** - Created by `rrr`
+1. **context.md** - Refreshed when running `ccc`, creates version in `context_history/`
+2. **context_history/** - Permanent versioned snapshots, never deleted
+3. **plans/*.md** - Created by `nnn`, executed by `gogogo`
+4. **progress.md** - Initialized and updated during `gogogo` execution with real-time status
+5. **execution_log.md** - Appended during execution with detailed timeline
+6. **retrospectives/*.md** - Created by `rrr` with comprehensive session summary
+7. **archive/** - Old files moved here, manual cleanup only (no auto-delete)
+
+### Session Continuity Features
+- **Context Versioning:** Every `ccc` creates a new version
+- **Continue vs. Fresh:** Choose to merge with previous session or start clean
+- **Progress Bars:** Visual task completion tracking
+- **Timeline View:** See sessions from last 7 days in `lll`
+- **Archive Policy:** All data preserved, no automatic deletion
+
+For complete details, see [STATE_MANAGEMENT.md](./STATE_MANAGEMENT.md)
 
 ---
 
@@ -318,31 +555,31 @@ Session End:
 ### Best Practices
 
 ✅ **Do:**
-- Run `ccc` เมื่อเริ่ม session ใหม่
-- Run `lll` บ่อยๆ เพื่อ check progress
-- Run `rrr` เมื่อจบงานสำคัญ
-- Review plan ก่อน `gogogo`
+- Run `ccc` when starting new session
+- Run `lll` frequently to check progress
+- Run `rrr` when completing major work
+- Review plan before `gogogo`
 
 ❌ **Don't:**
-- อย่า `gogogo` โดยไม่มี plan
-- อย่าลืม `ccc` ทำให้ context หาย
-- อย่า skip retrospective (เสีย learning)
+- Don't `gogogo` without a plan
+- Don't forget `ccc` and lose context
+- Don't skip retrospective (lose learning opportunities)
 
 ---
 
 ## Integration with Codex Architecture
 
-Shortcodes ทำงานร่วมกับ Codex scripts:
+Shortcodes work together with Codex scripts:
 
-- `ccc`, `nnn`, `rrr`, `lll` → **Pure Claude actions** (ไม่เรียก codex)
-- `gogogo` → **May invoke Codex scripts** ตาม plan
-  - เช่น task บอกใช้ `codex-exec.sh` Claude ก็จะเรียกผ่าน Bash tool
+- `ccc`, `nnn`, `rrr`, `lll` → **Pure Claude actions** (no codex invocation)
+- `gogogo` → **May invoke Codex scripts** based on plan
+  - Example: if task specifies `codex-exec.sh`, Claude will invoke it via Bash tool
 
 ---
 
 ## Future Shortcodes (Reserved)
 
-คำที่เตรียมไว้สำหรับอนาคต:
+Reserved for future use:
 
 - `qqq` - Quick questions/clarifications
 - `sss` - Show architecture/system summary
@@ -355,13 +592,13 @@ Shortcodes ทำงานร่วมกับ Codex scripts:
 
 ## Notes for Claude
 
-เมื่อเจอ shortcode ใน conversation:
+When encountering shortcode in conversation:
 
-1. **ไม่ต้องถาม confirm** - ทำทันที
-2. **ใช้ format ตามที่กำหนด** - เพื่อความ consistent
-3. **เก็บไฟล์ใน .mahirolab/state/** - ตาม specification
-4. **แสดง summary สั้นๆ** - ไม่ต้อง verbose
-5. **ถ้าเจอปัญหา** - รายงานและรอ instruction
+1. **No confirmation needed** - Execute immediately
+2. **Follow specified format** - For consistency
+3. **Save files in .mahirolab/state/** - Per specification
+4. **Show brief summary** - No verbose output
+5. **If issues arise** - Report and wait for instructions
 
 ---
 
