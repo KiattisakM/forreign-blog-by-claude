@@ -1,0 +1,187 @@
+// This is your Prisma schema file
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enum types matching frontend
+enum StockMarket {
+  US
+  EU
+  ASIA
+  UK
+  CANADA
+  AUSTRALIA
+}
+
+enum Sector {
+  TECHNOLOGY
+  FINANCE
+  HEALTHCARE
+  ENERGY
+  CONSUMER
+  INDUSTRIALS
+  MATERIALS
+  UTILITIES
+  REAL_ESTATE
+  COMMUNICATIONS
+}
+
+enum Exchange {
+  NYSE
+  NASDAQ
+  LSE
+  EURONEXT
+  TSE
+  HKEX
+  SSE
+  ASX
+  TSX
+}
+
+enum Currency {
+  USD
+  EUR
+  GBP
+  JPY
+  CNY
+  AUD
+  CAD
+  HKD
+}
+
+enum ArticleCategory {
+  ANALYSIS
+  NEWS
+  EDUCATION
+  OPINION
+  EARNINGS
+  MARKET_UPDATE
+}
+
+enum ReadingLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum Sentiment {
+  BULLISH
+  BEARISH
+  NEUTRAL
+}
+
+// Models
+model Author {
+  id        String    @id @default(uuid())
+  name      String
+  avatar    String?
+  bio       String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  articles  Article[]
+}
+
+model Article {
+  id           String          @id @default(uuid())
+  title        String
+  slug         String          @unique
+  excerpt      String
+  content      String
+  category     ArticleCategory
+  readingLevel ReadingLevel
+
+  // Author relationship
+  authorId     String
+  author       Author          @relation(fields: [authorId], references: [id])
+
+  // Stock information
+  stockSymbol      String
+  stockCompanyName String
+  stockMarket      StockMarket
+  stockExchange    Exchange
+  stockSector      Sector
+  stockCurrency    Currency
+  stockDescription String?
+  stockWebsite     String?
+  stockMarketCap   String?
+  stockFoundedYear Int?
+
+  // Article metadata
+  publishedAt      DateTime
+  updatedAt        DateTime   @updatedAt
+  readTime         Int        // in minutes
+  tags             String[]
+  featured         Boolean    @default(false)
+  imageUrl         String?
+  imageAlt         String?
+
+  // Price target (optional)
+  priceTarget      Float?
+  priceTargetTimeframe String?
+
+  // Sentiment
+  sentiment        Sentiment?
+
+  // Related stocks (stored as JSON array)
+  relatedStocks    Json?      // Array of StockInfo objects
+
+  @@index([slug])
+  @@index([stockMarket])
+  @@index([stockSector])
+  @@index([category])
+  @@index([publishedAt])
+  @@index([featured])
+}
+
+// Real-time market data from scraping
+model MarketIndex {
+  id            String   @id @default(uuid())
+  code          String   // SET, SET50, MAI, etc.
+  name          String
+  value         Float
+  change        Float
+  changePercent Float
+  timestamp     DateTime
+  source        String   @default("investing.com")
+  createdAt     DateTime @default(now())
+
+  @@index([code, timestamp])
+  @@index([timestamp])
+}
+
+model StockPrice {
+  id            String   @id @default(uuid())
+  symbol        String
+  name          String?
+  price         Float
+  change        Float
+  changePercent Float
+  volume        BigInt?
+  timestamp     DateTime
+  source        String   @default("investing.com")
+  createdAt     DateTime @default(now())
+
+  @@index([symbol, timestamp])
+  @@index([timestamp])
+}
+
+model ScraperLog {
+  id          String   @id @default(uuid())
+  type        String   // "index", "stock", "news"
+  status      String   // "success", "failed"
+  recordCount Int      @default(0)
+  error       String?
+  duration    Int?     // milliseconds
+  timestamp   DateTime
+  createdAt   DateTime @default(now())
+
+  @@index([type, timestamp])
+  @@index([status])
+}

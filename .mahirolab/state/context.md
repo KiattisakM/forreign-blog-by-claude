@@ -9,6 +9,7 @@
 - Address git changes (deletions and new untracked files)
 - Initialize state management system for future sessions
 - Ensure project is production-ready
+- Build backend API for Foreign Stock Blog (PostgreSQL + Express + Prisma)
 
 ## Project Overview
 This is a **Foreign Stock Blog** - a modern React application for international stock market analysis and insights.
@@ -41,6 +42,9 @@ This is a **Foreign Stock Blog** - a modern React application for international 
 - **Shortcode Protocol:** Implemented for efficient Claude-User communication
 - **Codex Architecture:** Using orchestrator/worker pattern with background jobs
 - **File Organization:** Separating plans, retrospectives, and context history
+- **Backend Stack:** PostgreSQL + Express.js + Prisma (TypeScript)
+- **Authentication:** Skip for Phase 1 (add later if needed)
+- **Project Structure:** Monorepo (server/ directory)
 
 ## Current Status
 Fresh session started. Project has:
