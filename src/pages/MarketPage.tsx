@@ -1,6 +1,6 @@
-import { useMemo, useCallback, useTransition } from 'react'
+import { useMemo, useCallback, useTransition, useState, useEffect } from 'react'
 import { useParams, useSearchParams, Navigate } from 'react-router-dom'
-import { Search, SlidersHorizontal, TrendingUp } from 'lucide-react'
+import { Search, SlidersHorizontal, TrendingUp, Loader2, AlertCircle } from 'lucide-react'
 import { MainLayout } from '@/components/layout/MainLayout'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { StockArticleCard } from '@/components/StockArticleCard'
@@ -9,8 +9,9 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
-import { mockStockArticles } from '@/data/mockStockArticles'
-import { StockMarket, Sector } from '@/types'
+import { api } from '@/services/api'
+import type { StockArticle, Sector } from '@/types'
+import { StockMarket } from '@/types'
 import {
   serializeArray,
   deserializeArray,
@@ -26,16 +27,49 @@ export default function MarketPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [isPending, startTransition] = useTransition()
 
-  // Validate market parameter
-  const validMarket = Object.values(StockMarket).includes(market as StockMarket)
-    ? (market as StockMarket)
-    : null
+  // API state
+  const [allArticles, setAllArticles] = useState<StockArticle[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  // Parse state from URL
+  // Validate market parameter first
+  const validMarket = useMemo(() => {
+    return Object.values(StockMarket).includes(market as StockMarket)
+      ? (market as StockMarket)
+      : null
+  }, [market])
+
+  // Parse state from URL (moved before useEffect)
   const selectedSectors = useMemo(() => {
     const sectors = deserializeArray(searchParams.get('sectors'))
     return validateSectors(sectors)
   }, [searchParams])
+
+  // Fetch articles from API with market and sector filters
+  useEffect(() => {
+    // Don't fetch if invalid market
+    if (!validMarket) return
+
+    const fetchArticles = async () => {
+      try {
+        setIsLoading(true)
+        setError(null)
+        const data = await api.articles.getAll({
+          limit: 100,
+          market: validMarket,  // Filter by market from URL param
+          sectors: selectedSectors.length > 0 ? selectedSectors : undefined  // Filter by sectors from query param
+        })
+        setAllArticles(data)
+      } catch (err) {
+        console.error('Failed to fetch articles:', err)
+        setError('Failed to load articles. Please try again later.')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchArticles()
+  }, [validMarket, selectedSectors])
 
   const searchQuery = useMemo(() =>
     deserializeSearch(searchParams.get('q')),
@@ -90,21 +124,11 @@ export default function MarketPage() {
     return <Navigate to="/articles" replace />
   }
 
-  // Filter and sort articles
+  // Filter and sort articles (API already filtered by market and sectors)
   const filteredAndSortedArticles = useMemo(() => {
-    // Start with articles from the selected market
-    let filtered = mockStockArticles.filter(
-      article => article.stockInfo.market === validMarket
-    )
+    let filtered = allArticles
 
-    // Filter by sectors
-    if (selectedSectors.length > 0) {
-      filtered = filtered.filter(article =>
-        selectedSectors.includes(article.stockInfo.sector)
-      )
-    }
-
-    // Filter by search query
+    // Filter by search query (client-side only)
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase()
       filtered = filtered.filter(article =>
@@ -116,7 +140,7 @@ export default function MarketPage() {
       )
     }
 
-    // Sort articles
+    // Sort articles (client-side)
     const sorted = [...filtered].sort((a, b) => {
       switch (sortBy) {
         case 'newest':
@@ -133,7 +157,7 @@ export default function MarketPage() {
     })
 
     return sorted
-  }, [validMarket, selectedSectors, searchQuery, sortBy])
+  }, [allArticles, searchQuery, sortBy])
 
   const handleClearFilters = useCallback(() => {
     setSearchParams({}, { replace: true })
@@ -152,6 +176,40 @@ export default function MarketPage() {
       [StockMarket.AUSTRALIA]: '🇦🇺',
     }
     return emojis[market] || '🌍'
+  }
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <MainLayout>
+        <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex flex-col justify-center items-center py-16">
+            <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+            <span className="text-lg text-muted-foreground">Loading articles...</span>
+          </div>
+        </div>
+      </MainLayout>
+    )
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <MainLayout>
+        <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center py-16">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-destructive/10 mb-4">
+              <AlertCircle className="h-8 w-8 text-destructive" />
+            </div>
+            <h3 className="text-xl font-semibold mb-2">Error loading articles</h3>
+            <p className="text-muted-foreground mb-6">{error}</p>
+            <Button onClick={() => window.location.reload()} variant="outline">
+              Retry
+            </Button>
+          </div>
+        </div>
+      </MainLayout>
+    )
   }
 
   return (

@@ -1,5 +1,6 @@
+import { useState, useEffect } from 'react'
 import { useParams, Link, Navigate } from 'react-router-dom'
-import { ArrowLeft, Calendar, Clock, User } from 'lucide-react'
+import { ArrowLeft, Calendar, Clock, User, Loader2, AlertCircle } from 'lucide-react'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import { MainLayout } from '@/components/layout/MainLayout'
@@ -10,29 +11,68 @@ import { Separator } from '@/components/ui/separator'
 import { MarketBadge } from '@/components/MarketBadge'
 import { SectorBadge } from '@/components/SectorBadge'
 import { StockArticleCard } from '@/components/StockArticleCard'
-import { mockStockArticles } from '@/data/mockStockArticles'
+import { api } from '@/services/api'
+import type { StockArticle } from '@/types'
 
 dayjs.extend(relativeTime)
 
 export default function ArticleDetailPage() {
   const { slug } = useParams<{ slug: string }>()
 
-  // Find the article by slug
-  const article = mockStockArticles.find(a => a.slug === slug)
+  // API state
+  const [article, setArticle] = useState<StockArticle | null>(null)
+  const [allArticles, setAllArticles] = useState<StockArticle[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [notFound, setNotFound] = useState(false)
+
+  // Fetch article and all articles for related
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!slug) return
+
+      try {
+        setIsLoading(true)
+        setError(null)
+
+        // Fetch article by slug and all articles in parallel
+        const [articleData, allArticlesData] = await Promise.all([
+          api.articles.getBySlug(slug),
+          api.articles.getAll({ limit: 100 }),
+        ])
+
+        setArticle(articleData)
+        setAllArticles(allArticlesData)
+      } catch (err) {
+        console.error('Failed to fetch article:', err)
+        if (err instanceof Error && err.message === 'Article not found') {
+          setNotFound(true)
+        } else {
+          setError('Failed to load article. Please try again later.')
+        }
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [slug])
 
   // If article not found, redirect to articles page
-  if (!article) {
+  if (notFound) {
     return <Navigate to="/articles" replace />
   }
 
   // Get related articles (same market or sector, excluding current)
-  const relatedArticles = mockStockArticles
-    .filter(a =>
-      a.id !== article.id &&
-      (a.stockInfo.market === article.stockInfo.market ||
-        a.stockInfo.sector === article.stockInfo.sector)
-    )
-    .slice(0, 3)
+  const relatedArticles = article
+    ? allArticles
+        .filter(a =>
+          a.id !== article.id &&
+          (a.stockInfo.market === article.stockInfo.market ||
+            a.stockInfo.sector === article.stockInfo.sector)
+        )
+        .slice(0, 3)
+    : []
 
   // Get category badge color
   const getCategoryColor = (category: string) => {
@@ -59,6 +99,57 @@ export default function ArticleDetailPage() {
         {article.sentiment}
       </Badge>
     )
+  }
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <MainLayout>
+        <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+          <Button asChild variant="ghost" className="mb-6">
+            <Link to="/articles">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Articles
+            </Link>
+          </Button>
+          <div className="flex flex-col justify-center items-center py-16">
+            <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+            <span className="text-lg text-muted-foreground">Loading article...</span>
+          </div>
+        </div>
+      </MainLayout>
+    )
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <MainLayout>
+        <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+          <Button asChild variant="ghost" className="mb-6">
+            <Link to="/articles">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Articles
+            </Link>
+          </Button>
+          <div className="text-center py-16">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-destructive/10 mb-4">
+              <AlertCircle className="h-8 w-8 text-destructive" />
+            </div>
+            <h3 className="text-xl font-semibold mb-2">Error loading article</h3>
+            <p className="text-muted-foreground mb-6">{error}</p>
+            <Button onClick={() => window.location.reload()} variant="outline">
+              Retry
+            </Button>
+          </div>
+        </div>
+      </MainLayout>
+    )
+  }
+
+  // If article is null but not loading/error, shouldn't happen
+  if (!article) {
+    return <Navigate to="/articles" replace />
   }
 
   return (

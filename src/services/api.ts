@@ -1,6 +1,9 @@
 // API Service Layer for Foreign Stock Blog
 // Handles all HTTP requests to the backend API
 
+import type { StockArticle, StockInfo } from '@/types'
+import { StockMarket, Sector, Exchange, Currency, ArticleCategory, ReadingLevel } from '@/types'
+
 const API_BASE = '/api';
 
 // API Response wrapper type
@@ -67,17 +70,68 @@ export interface Sector {
 
 export interface ArticleFilters {
   market?: string;
+  markets?: string[];  // Support multiple markets
   sector?: string;
+  sectors?: string[];  // Support multiple sectors
   page?: number;
   limit?: number;
   sort?: 'latest' | 'oldest' | 'popular';
 }
 
+// Mapper: Convert API Article to StockArticle (frontend format)
+const mapArticleToStockArticle = (apiArticle: Article): StockArticle => {
+  const stockInfo: StockInfo = {
+    symbol: apiArticle.stockSymbol,
+    companyName: apiArticle.stockCompanyName,
+    market: (apiArticle.stockMarket as StockMarket) || StockMarket.US,
+    exchange: (apiArticle.stockExchange as Exchange) || Exchange.NYSE,
+    sector: (apiArticle.stockSector as Sector) || Sector.TECHNOLOGY,
+    currency: (apiArticle.stockCurrency as Currency) || Currency.USD,
+    description: apiArticle.stockDescription || undefined,
+    website: apiArticle.stockWebsite || undefined,
+    marketCap: apiArticle.stockMarketCap || undefined,
+    foundedYear: apiArticle.stockFoundedYear || undefined,
+  };
+
+  return {
+    id: apiArticle.id,
+    title: apiArticle.title,
+    slug: apiArticle.slug,
+    excerpt: apiArticle.excerpt,
+    content: apiArticle.content,
+    category: apiArticle.category as ArticleCategory,
+    readingLevel: apiArticle.readingLevel as ReadingLevel,
+    author: apiArticle.author ? {
+      name: apiArticle.author.name,
+      avatar: apiArticle.author.avatar || undefined,
+      bio: apiArticle.author.bio || undefined,
+    } : {
+      name: 'Unknown Author',
+    },
+    publishedAt: new Date(apiArticle.publishedAt),
+    updatedAt: new Date(apiArticle.updatedAt),
+    readTime: apiArticle.readTime,
+    tags: apiArticle.tags,
+    featured: apiArticle.featured,
+    imageUrl: apiArticle.imageUrl,
+    stockInfo,
+  };
+};
+
 // Helper function to build query params
 const buildQueryString = (params: Record<string, any>): string => {
   const filtered = Object.entries(params)
-    .filter(([_, value]) => value !== undefined && value !== null && value !== '')
-    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`);
+    .filter(([_, value]) => {
+      if (Array.isArray(value)) return value.length > 0;
+      return value !== undefined && value !== null && value !== '';
+    })
+    .map(([key, value]) => {
+      if (Array.isArray(value)) {
+        // For arrays, join with comma: ?sectors=Tech,Finance
+        return `${encodeURIComponent(key)}=${encodeURIComponent(value.join(','))}`;
+      }
+      return `${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+    });
 
   return filtered.length > 0 ? `?${filtered.join('&')}` : '';
 };
@@ -110,29 +164,29 @@ export const articlesAPI = {
   /**
    * Get all articles with optional filters
    */
-  getAll: async (filters: ArticleFilters = {}): Promise<Article[]> => {
+  getAll: async (filters: ArticleFilters = {}): Promise<StockArticle[]> => {
     const queryString = buildQueryString(filters);
     const response = await fetchAPI<APIResponse<Article[]>>(`${API_BASE}/articles${queryString}`);
-    return response.data;
+    return response.data.map(mapArticleToStockArticle);
   },
 
   /**
    * Get single article by ID
    */
-  getById: async (id: string): Promise<Article> => {
+  getById: async (id: string): Promise<StockArticle> => {
     const response = await fetchAPI<APIResponse<Article>>(`${API_BASE}/articles/${id}`);
-    return response.data;
+    return mapArticleToStockArticle(response.data);
   },
 
   /**
    * Get single article by slug
    */
-  getBySlug: async (slug: string): Promise<Article> => {
+  getBySlug: async (slug: string): Promise<StockArticle> => {
     const response = await fetchAPI<APIResponse<Article[]>>(`${API_BASE}/articles?slug=${encodeURIComponent(slug)}`);
     if (response.data.length === 0) {
       throw new Error('Article not found');
     }
-    return response.data[0];
+    return mapArticleToStockArticle(response.data[0]);
   },
 };
 

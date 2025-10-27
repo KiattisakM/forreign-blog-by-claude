@@ -11,10 +11,11 @@ import { NumberTicker } from '@/components/magicui/number-ticker'
 import { ShimmerButton } from '@/components/magicui/shimmer-button'
 import { BorderBeam } from '@/components/magicui/border-beam'
 import { SEO } from '@/components/SEO'
-import { api, type Article } from '@/services/api'
+import { api } from '@/services/api'
+import type { StockArticle } from '@/types'
 
 export default function HomePage() {
-  const [articles, setArticles] = useState<Article[]>([])
+  const [articles, setArticles] = useState<StockArticle[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -42,9 +43,9 @@ export default function HomePage() {
 
   // Count articles by market
   const marketCounts = {
-    US: articles.filter(a => a.market === 'US').length,
-    EU: articles.filter(a => a.market === 'EU').length,
-    ASIA: articles.filter(a => a.market === 'ASIA').length,
+    US: articles.filter(a => a.stockInfo.market === 'US').length,
+    EU: articles.filter(a => a.stockInfo.market === 'EU').length,
+    ASIA: articles.filter(a => a.stockInfo.market === 'ASIA').length,
   }
 
   return (

@@ -1,6 +1,6 @@
-import { useMemo, useCallback, useTransition } from 'react'
+import { useMemo, useCallback, useTransition, useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Search, SlidersHorizontal } from 'lucide-react'
+import { Search, SlidersHorizontal, Loader2, AlertCircle } from 'lucide-react'
 import { MainLayout } from '@/components/layout/MainLayout'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { StockArticleCard } from '@/components/StockArticleCard'
@@ -9,8 +9,8 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
-import { mockStockArticles } from '@/data/mockStockArticles'
-import { StockMarket, Sector } from '@/types'
+import { api } from '@/services/api'
+import type { StockArticle, StockMarket, Sector } from '@/types'
 import {
   serializeArray,
   deserializeArray,
@@ -25,6 +25,30 @@ type SortOption = 'newest' | 'oldest' | 'readTime' | 'category'
 export default function ArticleListPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [isPending, startTransition] = useTransition()
+
+  // API state
+  const [allArticles, setAllArticles] = useState<StockArticle[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Fetch articles from API
+  useEffect(() => {
+    const fetchArticles = async () => {
+      try {
+        setIsLoading(true)
+        setError(null)
+        const data = await api.articles.getAll({ limit: 100 })
+        setAllArticles(data)
+      } catch (err) {
+        console.error('Failed to fetch articles:', err)
+        setError('Failed to load articles. Please try again later.')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchArticles()
+  }, [])
 
   // Parse state from URL
   const selectedMarkets = useMemo(() => {
@@ -100,7 +124,7 @@ export default function ArticleListPage() {
 
   // Filter and sort articles
   const filteredAndSortedArticles = useMemo(() => {
-    let filtered = mockStockArticles
+    let filtered = allArticles
 
     // Filter by markets
     if (selectedMarkets.length > 0) {
@@ -145,7 +169,7 @@ export default function ArticleListPage() {
     })
 
     return sorted
-  }, [selectedMarkets, selectedSectors, searchQuery, sortBy])
+  }, [allArticles, selectedMarkets, selectedSectors, searchQuery, sortBy])
 
   const handleClearFilters = useCallback(() => {
     setSearchParams({}, { replace: true })
@@ -252,11 +276,13 @@ export default function ArticleListPage() {
             {/* Results Count */}
             <div className="mb-6 flex items-center justify-between flex-wrap gap-2">
               <p className="text-sm text-muted-foreground">
-                {filteredAndSortedArticles.length === mockStockArticles.length ? (
+                {isLoading ? (
+                  <>Loading articles...</>
+                ) : filteredAndSortedArticles.length === allArticles.length ? (
                   <>Showing all {filteredAndSortedArticles.length} articles</>
                 ) : (
                   <>
-                    Found {filteredAndSortedArticles.length} of {mockStockArticles.length} articles
+                    Found {filteredAndSortedArticles.length} of {allArticles.length} articles
                   </>
                 )}
               </p>
@@ -277,27 +303,53 @@ export default function ArticleListPage() {
               </div>
             </div>
 
-            {/* Articles Grid */}
-            {filteredAndSortedArticles.length > 0 ? (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {filteredAndSortedArticles.map((article) => (
-                  <StockArticleCard key={article.id} article={article} />
-                ))}
+            {/* Loading State */}
+            {isLoading && (
+              <div className="flex flex-col justify-center items-center py-16">
+                <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+                <span className="text-lg text-muted-foreground">Loading articles...</span>
               </div>
-            ) : (
-              /* Empty State */
+            )}
+
+            {/* Error State */}
+            {error && !isLoading && (
               <div className="text-center py-16">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
-                  <Search className="h-8 w-8 text-muted-foreground" />
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-destructive/10 mb-4">
+                  <AlertCircle className="h-8 w-8 text-destructive" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">No articles found</h3>
-                <p className="text-muted-foreground mb-6">
-                  Try adjusting your filters or search query
-                </p>
-                <Button onClick={handleClearFilters} variant="outline">
-                  Clear filters
+                <h3 className="text-xl font-semibold mb-2">Error loading articles</h3>
+                <p className="text-muted-foreground mb-6">{error}</p>
+                <Button onClick={() => window.location.reload()} variant="outline">
+                  Retry
                 </Button>
               </div>
+            )}
+
+            {/* Articles Grid */}
+            {!isLoading && !error && (
+              <>
+                {filteredAndSortedArticles.length > 0 ? (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {filteredAndSortedArticles.map((article) => (
+                      <StockArticleCard key={article.id} article={article} />
+                    ))}
+                  </div>
+                ) : (
+                  /* Empty State */
+                  <div className="text-center py-16">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
+                      <Search className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-xl font-semibold mb-2">No articles found</h3>
+                    <p className="text-muted-foreground mb-6">
+                      Try adjusting your filters or search query
+                    </p>
+                    <Button onClick={handleClearFilters} variant="outline">
+                      Clear filters
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

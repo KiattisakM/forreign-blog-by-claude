@@ -7,15 +7,27 @@ import { StockMarket, Sector, ArticleCategory, ReadingLevel } from '@prisma/clie
 export class ArticleController {
   async getArticles(req: Request, res: Response, next: NextFunction) {
     try {
+      // Helper function to parse query param (supports comma-separated values)
+      const parseQueryParam = (param: any): string[] | undefined => {
+        if (!param) return undefined;
+        if (Array.isArray(param)) return param as string[];
+        // Split comma-separated values
+        return (param as string).split(',').map(v => v.trim()).filter(Boolean);
+      };
+
       // Parse filters
       const filters: ArticleFilters = {
-        market: req.query.market ? (Array.isArray(req.query.market) ? req.query.market as StockMarket[] : [req.query.market as StockMarket]) : undefined,
-        sector: req.query.sector ? (Array.isArray(req.query.sector) ? req.query.sector as Sector[] : [req.query.sector as Sector]) : undefined,
-        category: req.query.category ? (Array.isArray(req.query.category) ? req.query.category as ArticleCategory[] : [req.query.category as ArticleCategory]) : undefined,
-        readingLevel: req.query.readingLevel ? (Array.isArray(req.query.readingLevel) ? req.query.readingLevel as ReadingLevel[] : [req.query.readingLevel as ReadingLevel]) : undefined,
+        // Support both singular (market) and plural (markets)
+        // Convert to uppercase to match Prisma enum values
+        market: parseQueryParam(req.query.market || req.query.markets)?.map(v => v.toUpperCase()) as StockMarket[] | undefined,
+        // Support both singular (sector) and plural (sectors)
+        // Convert to uppercase to match Prisma enum values
+        sector: parseQueryParam(req.query.sector || req.query.sectors)?.map(v => v.toUpperCase()) as Sector[] | undefined,
+        category: parseQueryParam(req.query.category)?.map(v => v.toUpperCase()) as ArticleCategory[] | undefined,
+        readingLevel: parseQueryParam(req.query.readingLevel)?.map(v => v.toUpperCase()) as ReadingLevel[] | undefined,
         search: req.query.search as string,
         featured: req.query.featured !== undefined ? req.query.featured === 'true' : undefined,
-        tags: req.query.tags ? (Array.isArray(req.query.tags) ? req.query.tags as string[] : [req.query.tags as string]) : undefined
+        tags: parseQueryParam(req.query.tags)
       };
 
       // Parse pagination
