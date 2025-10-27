@@ -14,7 +14,7 @@ export class ArticleController {
         category: req.query.category ? (Array.isArray(req.query.category) ? req.query.category as ArticleCategory[] : [req.query.category as ArticleCategory]) : undefined,
         readingLevel: req.query.readingLevel ? (Array.isArray(req.query.readingLevel) ? req.query.readingLevel as ReadingLevel[] : [req.query.readingLevel as ReadingLevel]) : undefined,
         search: req.query.search as string,
-        featured: req.query.featured === 'true',
+        featured: req.query.featured !== undefined ? req.query.featured === 'true' : undefined,
         tags: req.query.tags ? (Array.isArray(req.query.tags) ? req.query.tags as string[] : [req.query.tags as string]) : undefined
       };
 

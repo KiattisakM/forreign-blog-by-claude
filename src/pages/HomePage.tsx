@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
-import { TrendingUp, Globe2, BookOpen } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { TrendingUp, Globe2, BookOpen, Loader2, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -10,18 +11,40 @@ import { NumberTicker } from '@/components/magicui/number-ticker'
 import { ShimmerButton } from '@/components/magicui/shimmer-button'
 import { BorderBeam } from '@/components/magicui/border-beam'
 import { SEO } from '@/components/SEO'
-import { mockStockArticles } from '@/data/mockStockArticles'
-import { StockMarket } from '@/types'
+import { api, type Article } from '@/services/api'
 
 export default function HomePage() {
-  // Get featured articles
-  const featuredArticles = mockStockArticles.filter(article => article.featured).slice(0, 4)
+  const [articles, setArticles] = useState<Article[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Fetch articles from API
+  useEffect(() => {
+    const fetchArticles = async () => {
+      try {
+        setIsLoading(true)
+        setError(null)
+        const data = await api.articles.getAll({ limit: 20 })
+        setArticles(data)
+      } catch (err) {
+        console.error('Failed to fetch articles:', err)
+        setError('Failed to load articles. Please try again later.')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchArticles()
+  }, [])
+
+  // Get featured articles (first 4)
+  const featuredArticles = articles.slice(0, 4)
 
   // Count articles by market
   const marketCounts = {
-    US: mockStockArticles.filter(a => a.stockInfo.market === StockMarket.US).length,
-    EU: mockStockArticles.filter(a => a.stockInfo.market === StockMarket.EU).length,
-    ASIA: mockStockArticles.filter(a => a.stockInfo.market === StockMarket.ASIA).length,
+    US: articles.filter(a => a.market === 'US').length,
+    EU: articles.filter(a => a.market === 'EU').length,
+    ASIA: articles.filter(a => a.market === 'ASIA').length,
   }
 
   return (
@@ -152,11 +175,51 @@ export default function HomePage() {
               <Link to="/articles">View All</Link>
             </Button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-            {featuredArticles.map((article) => (
-              <StockArticleCard key={article.id} article={article} />
-            ))}
-          </div>
+
+          {/* Loading State */}
+          {isLoading && (
+            <div className="flex justify-center items-center py-12">
+              <Loader2 className="h-12 w-12 animate-spin text-primary" />
+              <span className="ml-3 text-lg text-muted-foreground">Loading articles...</span>
+            </div>
+          )}
+
+          {/* Error State */}
+          {error && !isLoading && (
+            <Card className="border-destructive">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3 text-destructive">
+                  <AlertCircle className="h-6 w-6" />
+                  <div>
+                    <p className="font-semibold">Error loading articles</p>
+                    <p className="text-sm text-muted-foreground">{error}</p>
+                  </div>
+                </div>
+                <Button
+                  onClick={() => window.location.reload()}
+                  variant="outline"
+                  className="mt-4"
+                >
+                  Retry
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Articles Grid */}
+          {!isLoading && !error && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+              {featuredArticles.length === 0 ? (
+                <div className="col-span-full text-center py-12 text-muted-foreground">
+                  No articles available yet.
+                </div>
+              ) : (
+                featuredArticles.map((article) => (
+                  <StockArticleCard key={article.id} article={article} />
+                ))
+              )}
+            </div>
+          )}
         </div>
       </section>
 
