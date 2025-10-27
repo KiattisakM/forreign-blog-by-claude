@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: stock-blog-db
+    environment:
+      POSTGRES_DB: foreign_stock_blog
+      POSTGRES_USER: blog_user
+      POSTGRES_PASSWORD: blog_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U blog_user -d foreign_stock_blog"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: stock-blog-backend
+    environment:
+      DATABASE_URL: "postgresql://blog_user:blog_password@postgres:5432/foreign_stock_blog?schema=public"
+      PORT: 3001
+      NODE_ENV: production
+      CORS_ORIGIN: "http://localhost"
+      SCRAPER_ENABLED: "false"
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Frontend Web
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: stock-blog-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
